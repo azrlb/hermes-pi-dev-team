@@ -73,16 +73,48 @@ New features should be **additive** — extend the existing system, don't reshap
 Pi subagents (`tdd-coder`, `quinn-validator`) do NOT read this SKILL.md, project-context.md, or pattern-scan.md. Project knowledge reaches Pi through TWO channels:
 
 **Channel 1 — AGENTS.md (always read by Pi):**
-- Phase 2 (brownfield) injects a `<!-- BEGIN PROJECT RULES -->` block into AGENTS.md
+- immersion (Phase 2, brownfield) injects a `<!-- BEGIN PROJECT RULES -->` block into AGENTS.md
 - Contains: Critical Don't-Miss Rules, Anti-Patterns, Security Non-Negotiables
 - Pi reads this automatically on every invocation
 
 **Channel 2 — Story file Dev Notes (read per-story):**
-- Phase 7 embeds a `## Coding Rules` section into every brownfield story's Dev Notes
+- story-specs (Phase 7a) embeds a `## Coding Rules` section into every brownfield story's Dev Notes
 - Contains: concrete file paths to follow, services to reuse, story-specific do-NOTs
-- The work-loop's Build Context step (Phase 10, step 5) reads the story file — rules flow to Pi automatically
+- The work-loop's Build Context step (dev / Phase 10, step 5) reads the story file — rules flow to Pi automatically
 
 Both channels are required. AGENTS.md provides project-wide rules; story Dev Notes provide task-specific guidance with concrete file paths.
+
+---
+
+## Phase Name Reference
+
+Every phase has both a number (for backward compat) and a BMAD agent name (for human readability). Both work in prompts — "start at dev" and "start at phase 10" mean the same thing.
+
+| Number | BMAD Name | Agent Role | Greenfield | Brownfield |
+|--------|-----------|-----------|-----------|-----------|
+| Phase 0 | `analyst` | Mary — market research & validation | runs | auto-skipped |
+| Phase 1 | `brief-capture` | PM — captures idea/task statement | runs | runs |
+| Phase 2 | `immersion` | Architect — deep project immersion + pattern scan | scaffold | brownfield deep dive |
+| Phase 3 | `product-brief` | PM — writes brief | product-brief | feature-brief (lean) |
+| Phase 4 | `prd` | PM — writes spec | full PRD | feature spec (lean) |
+| Phase 5 | `architecture` | Architect — designs solution | full architecture | integration architecture |
+| Phase 6 | `epics` | SM — breaks into epics & stories | runs | runs |
+| Phase 7a | `story-specs` | SM — writes story specs with AC, tasks, dev notes | runs | runs + Coding Rules injection |
+| Phase 7b | `tdd` | QA — writes failing TDD test files from specs | runs | runs |
+| Phase 8 | `beads-filing` | SM — files beads issues with deps | runs | runs |
+| Phase 9 | `checkpoint` | SM — checkpoint & handoff to dev | runs | runs |
+| Phase 10 | `dev` | Pi — codes to make tests pass (work-loop) | runs | runs |
+| Phase 10b | `pattern-capture` | Brownfield-enforcer — updates project-context.md | skipped | runs |
+| Phase 10c | `quinn-review` | QA — adversarial review (MANDATORY HARD GATE) | runs | runs |
+| Phase 11 | `e2e-validation` | QA — end-to-end validation | runs | runs + integration check |
+| Phase 12 | `deploy` | DevOps — deploy to Railway | runs | preview deploy |
+| Phase 13 | `report` | Tech-writer — completion report | runs | runs |
+
+**Prompt examples using BMAD names:**
+- `hermes chat -s dev-team/vibe-loop --yolo -q "Add X to Crispi. Start at dev."`
+- `hermes chat -s dev-team/vibe-loop --yolo -q "Build X. Start at tdd."`
+- `hermes chat -s dev-team/vibe-loop --yolo -q "Build X. Start at architecture."`
+- `hermes chat -s dev-team/vibe-loop --yolo -q "Run quinn-review on current branch."`
 
 ---
 
@@ -90,16 +122,16 @@ Both channels are required. AGENTS.md provides project-wide rules; story Dev Not
 
 ### Completion Gate — HARD REQUIREMENT
 
-**You are NOT done until Phase 10c (Quinn Adversarial Review) has run.** This is a hard gate, not a suggestion. Implementation alone (Phase 10) is NOT completion. The pipeline minimum is:
+**You are NOT done until Phase 10c / quinn-review has run.** This is a hard gate, not a suggestion. Implementation alone (Phase 10) is NOT completion. The pipeline minimum is:
 
-**Phase 10 (Implementation) → Phase 10b (Pattern Capture) → Phase 10c (Quinn Review)**
+**dev (Phase 10) → pattern-capture (Phase 10b) → quinn-review (Phase 10c)**
 
 If you are about to output a final summary or declare the task complete, STOP and check:
 1. Did you run `git diff main...HEAD` and invoke the three Quinn review layers?
 2. Did you file findings as beads issues and fix P0/P1s?
 3. Did you output the Quinn findings report?
 
-If the answer to ANY of these is NO, you are not done. Continue to Phase 10c before responding.
+If the answer to ANY of these is NO, you are not done. Continue to quinn-review (Phase 10c) before responding.
 
 **This gate applies in ALL modes:** interactive, `-q` single-query, `--yolo`, and Telegram. No exceptions.
 
@@ -149,18 +181,19 @@ Before each phase, check if its output artifacts already exist from a previous r
 
 | Situation | Action |
 |-----------|--------|
-| `_output/hunt-results.md` exists when Phase 0-hunt starts | Ask: "Hunt results already exist ({N} candidates). **Pick from existing** / **Re-run hunt**?" In `--yolo` mode: present existing results for selection (still halts for pick). |
-| `_output/analyst-report.md` exists when Phase 0 starts | Ask: "Analyst report already exists. **Use existing** / **Re-run research** / **Skip to Phase 1**?" |
-| `_output/idea-statement.md` exists when Phase 1 starts | Ask: "Idea statement already exists. **Use existing** / **Revise**?" |
-| `package.json` + `AGENTS.md` + `.beads/` exist when Phase 2 starts | Auto-detect brownfield — skip scaffold |
-| `_output/product-brief.md` or `_output/feature-brief.md` exists when Phase 3 starts | Ask: "Brief already exists. **Use existing** / **Regenerate**?" |
-| `_output/prd.md` or `_output/feature-spec.md` exists when Phase 4 starts | Ask: "Spec already exists. **Use existing** / **Regenerate**?" |
-| `_output/architecture.md` exists when Phase 5 starts | Ask: "Architecture doc already exists. **Use existing** / **Regenerate**?" |
-| `_output/epics.md` exists when Phase 6 starts | Ask: "Epics already exist. **Use existing** / **Regenerate**?" |
-| Story files + test files exist when Phase 7 starts | Ask: "Story and test files already exist ({N} stories, {M} tests). **Use existing** / **Regenerate all** / **Generate missing only**?" |
-| Beads issues with matching labels exist when Phase 8 starts | Ask: "Found {N} existing Beads issues with label '{prefix}'. **Use existing** / **Wipe and reimport**?" |
-| Discovery commit exists in git log when Phase 9 starts | Auto-skip commit (already pushed). Proceed to Phase 10. |
-| `bd ready` returns issues when Phase 10 starts | Auto-resume work-loop from where it left off. No prompt needed. |
+| `_output/hunt-results.md` exists when analyst (Phase 0) hunt starts | Ask: "Hunt results already exist ({N} candidates). **Pick from existing** / **Re-run hunt**?" In `--yolo` mode: present existing results for selection (still halts for pick). |
+| `_output/analyst-report.md` exists when analyst (Phase 0) starts | Ask: "Analyst report already exists. **Use existing** / **Re-run research** / **Skip to brief-capture?**" |
+| `_output/idea-statement.md` exists when brief-capture (Phase 1) starts | Ask: "Idea statement already exists. **Use existing** / **Revise**?" |
+| `package.json` + `AGENTS.md` + `.beads/` exist when immersion (Phase 2) starts | Auto-detect brownfield — skip scaffold |
+| `_output/product-brief.md` or `_output/feature-brief.md` exists when product-brief (Phase 3) starts | Ask: "Brief already exists. **Use existing** / **Regenerate**?" |
+| `_output/prd.md` or `_output/feature-spec.md` exists when prd (Phase 4) starts | Ask: "Spec already exists. **Use existing** / **Regenerate**?" |
+| `_output/architecture.md` exists when architecture (Phase 5) starts | Ask: "Architecture doc already exists. **Use existing** / **Regenerate**?" |
+| `_output/epics.md` exists when epics (Phase 6) starts | Ask: "Epics already exist. **Use existing** / **Regenerate**?" |
+| Story spec files exist when story-specs (Phase 7a) starts | Ask: "Story specs already exist ({N} stories). **Use existing** / **Regenerate all** / **Generate missing only**?" |
+| Test files exist when tdd (Phase 7b) starts | Ask: "TDD test files already exist ({M} tests). **Use existing** / **Regenerate all** / **Generate missing only**?" |
+| Beads issues with matching labels exist when beads-filing (Phase 8) starts | Ask: "Found {N} existing Beads issues with label '{prefix}'. **Use existing** / **Wipe and reimport**?" |
+| Discovery commit exists in git log when checkpoint (Phase 9) starts | Auto-skip commit (already pushed). Proceed to dev (Phase 10). |
+| `bd ready` returns issues when dev (Phase 10) starts | Auto-resume work-loop from where it left off. No prompt needed. |
 
 **In `--yolo` mode:** Auto-select "Use existing" for all redundancy prompts — never regenerate unless the artifact is missing or corrupted. This keeps autonomous runs fast when resuming.
 
@@ -168,7 +201,7 @@ Before each phase, check if its output artifacts already exist from a previous r
 
 **Key principle:** Never redo work that's already done. If the user already wrote a PRD by hand or with a BMAD agent, the vibe loop should pick it up and keep going.
 
-### Phase 0: Analyst — Research, Validate & Brainstorm (Greenfield Only)
+### Phase 0 / analyst — Research, Validate & Brainstorm (Greenfield Only)
 
 Act as Mary (strategic business analyst). This phase has two modes depending on what the user provides.
 
@@ -319,7 +352,7 @@ Compile everything into `_output/analyst-report.md`:
 
 ---
 
-### Phase 1: Capture Idea
+### Phase 1 / brief-capture — Capture Idea
 
 Parse the user's input query combined with the analyst report (if Phase 0 ran) as the product idea.
 
@@ -342,7 +375,7 @@ Parse the user's input query combined with the analyst report (if Phase 0 ran) a
 
 ---
 
-### Phase 2: Project Scaffold
+### Phase 2 / immersion — Project Scaffold (Greenfield) / Deep Project Immersion (Brownfield)
 
 Detect whether this is greenfield (new project) or brownfield (existing project).
 
@@ -548,7 +581,7 @@ If a `<!-- BEGIN PROJECT RULES -->` block already exists, replace it. Never dupl
 
 ---
 
-### Phase 3: Product Brief / Feature Brief
+### Phase 3 / product-brief — Product Brief (Greenfield) / Feature Brief (Brownfield)
 
 **Greenfield → Product Brief.** Act as a product manager. Full product brief.
 **Brownfield → Feature Brief.** Lean scope focused on what's being added/changed.
@@ -588,7 +621,7 @@ If a `<!-- BEGIN PROJECT RULES -->` block already exists, replace it. Never dupl
 
 ---
 
-### Phase 4: PRD / Feature Spec
+### Phase 4 / prd — Full PRD (Greenfield) / Feature Spec (Brownfield)
 
 **Greenfield → Full PRD.** Complete product requirements document.
 **Brownfield → Feature Spec.** Focused on the change, integration points, and what to reuse.
@@ -634,7 +667,7 @@ If a `<!-- BEGIN PROJECT RULES -->` block already exists, replace it. Never dupl
 
 ---
 
-### Phase 5: Architecture / Integration Architecture
+### Phase 5 / architecture — Full Architecture (Greenfield) / Integration Architecture (Brownfield)
 
 **Greenfield → Full architecture.** Design the system from scratch.
 **Brownfield → Integration architecture.** "How does this fit?" — only document what's NEW.
@@ -683,7 +716,7 @@ The existing architecture is already defined in project-context.md and AGENTS.md
 
 ---
 
-### Phase 6: Epics & Stories
+### Phase 6 / epics — Epics & Stories
 
 Consume PRD + architecture. Break into implementable work.
 
@@ -713,9 +746,11 @@ Consume PRD + architecture. Break into implementable work.
 
 ---
 
-### Phase 7: Story Files & TDD Tests
+### Phase 7a / story-specs — Story Spec Files
 
-For each story in epics.md, create two files: a story spec and a TDD test.
+**Agent: SM (Scrum Master / Story Writer)**
+
+For each story in epics.md, the SM writes a story spec file. No test files yet — those come in Phase 7b.
 
 **Story spec format** (in `docs/stories/{slug}.md`):
 ```markdown
@@ -792,7 +827,19 @@ Only include sections relevant to the story. A story that doesn't touch routes d
 
 This is how project intimacy flows to Pi — through the story file, with concrete file paths, not vague references.
 
-**TDD test format** — use the test framework and language chosen in Phase 5 (architecture). Example for TypeScript/Jest:
+**Post-write validation (7a):** After generating all story files, verify each story has a corresponding story file. Log missing specs to `_output/phase7a-validation.log`. Proceed to Phase 7b.
+
+**Output (7a):** N story files in `docs/stories/`
+
+---
+
+### Phase 7b / tdd — TDD Test Files
+
+**Agent: QA (Quinn / Test Writer)**
+
+QA reads each story spec from Phase 7a and writes failing TDD test files that define the contract. Code does not exist yet — tests will fail until dev (Phase 10) implements it. This is the correct starting state.
+
+**TDD test format** — use the test framework and language chosen in Phase 5 / architecture. Example for TypeScript/Jest:
 ```typescript
 /**
  * Epic {N}: {Epic Name}
@@ -828,13 +875,13 @@ Adapt the format to match whatever stack Phase 5 selected.
 - Each acceptance criterion becomes at least one test
 - Tests import modules that don't exist yet (Pi will create them)
 
-**Post-write validation:** After generating all files, verify each story has both a story file AND a test file (except doc-only stories like architecture spikes). If any pair is incomplete, regenerate the missing file before proceeding. Log mismatches to `_output/phase7-validation.log`.
+**Post-write validation (7b):** After generating all test files, verify each story spec has a corresponding test file (except doc-only stories like architecture spikes). If any test file is missing, regenerate it before proceeding. Log mismatches to `_output/phase7b-validation.log`.
 
-**Output:** N story files in `docs/stories/` + N test files in `src/**/__tests__/`
+**Output (7b):** N test files in `src/**/__tests__/`
 
 ---
 
-### Phase 8: File Beads Issues
+### Phase 8 / beads-filing — File Beads Issues
 
 Convert stories into Beads issues with full dependency tracking.
 
@@ -864,7 +911,7 @@ Convert stories into Beads issues with full dependency tracking.
 
 ---
 
-### Phase 9: Checkpoint & Handoff
+### Phase 9 / checkpoint — Checkpoint & Handoff
 
 Discovery is complete. Prepare for implementation.
 
@@ -892,17 +939,17 @@ Discovery is complete. Prepare for implementation.
    Beads issues: {count}
    Starting implementation...
    ```
-6. **Immediately transition to Phase 10.** Do NOT pause, ask for confirmation, or wait for user input. In `--yolo` mode the pipeline is continuous — discovery flows directly into implementation with zero human gates. Even in interactive mode, proceed unless the user explicitly said to stop after discovery. **⚠ RE-READ "Yolo Mode — No Human Gates" section NOW before outputting anything. If your next action is text without a tool call, you are about to violate the yolo rule.**
+6. **Immediately transition to dev (Phase 10).** Do NOT pause, ask for confirmation, or wait for user input. In `--yolo` mode the pipeline is continuous — discovery flows directly into implementation with zero human gates. Even in interactive mode, proceed unless the user explicitly said to stop after discovery. **⚠ RE-READ "Yolo Mode — No Human Gates" section NOW before outputting anything. If your next action is text without a tool call, you are about to violate the yolo rule.**
 
 ---
 
-### Phase 10: Implementation Execution
+### Phase 10 / dev — Implementation Execution
 
 **Pre-check:** Before starting, verify the work-loop skill exists:
 ```bash
 ls ~/.hermes/skills/dev-team/work-loop/SKILL.md
 ```
-If missing: Telegram alert "Vibe loop Phase 10 halted — dev-team/work-loop skill not found. Install it and re-run." Then halt. Do NOT attempt to implement stories without the work-loop orchestration.
+If missing: Telegram alert "Vibe loop dev (Phase 10) halted — dev-team/work-loop skill not found. Install it and re-run." Then halt. Do NOT attempt to implement stories without the work-loop orchestration.
 
 **Hands-off rule:** During Phase 10, Hermes orchestrates but NEVER edits source or test files directly. All code changes flow through Pi subagents. If tests fail due to environment issues, classify as INFRA and escalate — do not edit tests to work around the problem.
 
@@ -923,9 +970,9 @@ When all stories are closed (or only escalated stories remain), proceed to Phase
 
 If stories are blocked on escalations, proceed to Phase 10b anyway with what's complete — partial apps can still be validated and deployed.
 
-**⚠ COMPLETION GATE:** Do NOT declare the task done, output a final summary, or exit after Phase 10. You MUST continue through Phase 10b → 10c → 11. Phase 10c (Quinn Review) is mandatory — skipping it is a bug in your execution, not a valid shortcut. This applies even in `-q` mode.
+**⚠ COMPLETION GATE:** Do NOT declare the task done, output a final summary, or exit after dev (Phase 10). You MUST continue through pattern-capture (10b) → quinn-review (10c) → e2e-validation (11). quinn-review is mandatory — skipping it is a bug in your execution, not a valid shortcut. This applies even in `-q` mode.
 
-### Phase 10b: Pattern Capture (Brownfield Only)
+### Phase 10b / pattern-capture — Pattern Capture (Brownfield Only)
 
 **Skip if greenfield.** Greenfield projects establish patterns — brownfield projects need to record new patterns so the NEXT session inherits them.
 
@@ -963,7 +1010,7 @@ After work-loop execution completes, scan what was created during this session:
 
 ---
 
-### Phase 10c: Quinn Adversarial Review (MANDATORY — HARD GATE)
+### Phase 10c / quinn-review — Quinn Adversarial Review (MANDATORY — HARD GATE)
 
 **This is NOT optional. This is a HARD GATE — the pipeline cannot complete without it.** If you are in `-q` mode and about to return your response: you are not done until this phase runs. Pi's code passes tests, but tests only validate what was anticipated. Quinn catches what wasn't — omissions, dead code, composition errors, security issues, spec deviations. Tests and adversarial review are complementary; neither replaces the other.
 
@@ -1025,7 +1072,7 @@ Dismissed: {dismissed_count}
 
 ---
 
-### Phase 11: End-to-End Validation
+### Phase 11 / e2e-validation — End-to-End Validation
 
 All stories are implemented and adversarially reviewed. Now verify the whole app works as a system, not just individual stories.
 
@@ -1079,7 +1126,7 @@ All stories are implemented and adversarially reviewed. Now verify the whole app
 
 ---
 
-### Phase 12: Deploy to Railway
+### Phase 12 / deploy — Deploy to Railway
 
 Deploy the completed app. This phase adapts based on greenfield vs brownfield.
 
@@ -1091,7 +1138,7 @@ Deploy the completed app. This phase adapts based on greenfield vs brownfield.
    ```bash
    command -v railway >/dev/null 2>&1
    ```
-   If missing, skip with Telegram: "Railway CLI not installed. Run `npm i -g @railway/cli && railway login` then re-run Phase 12."
+   If missing, skip with Telegram: "Railway CLI not installed. Run `npm i -g @railway/cli && railway login` then re-run deploy (Phase 12)."
 
 2. **Check for existing Railway project:**
    ```bash
@@ -1149,7 +1196,7 @@ Status: {live/preview}
 
 ---
 
-### Phase 13: Completion
+### Phase 13 / report — Completion Report
 
 **Final report:**
 ```
@@ -1175,18 +1222,18 @@ And report via Telegram what's left.
 
 ## Error Handling
 
-### Analyst Phase Errors (0)
+### analyst (Phase 0) Errors
 
 | Error | Action |
 |-------|--------|
-| Web search tool not configured | Skip Phase 0, proceed to Phase 1 with warning in idea statement |
-| Web search rate-limited or network error | Retry with 30s backoff, up to 3 attempts. If still failing, skip Phase 0 with warning |
+| Web search tool not configured | Skip analyst, proceed to brief-capture (Phase 1) with warning in idea statement |
+| Web search rate-limited or network error | Retry with 30s backoff, up to 3 attempts. If still failing, skip analyst with warning |
 | Market research returns no results | Proceed with empty competitive snapshot, note "no data found" in analyst report |
 | Idea hunt finds zero candidates | Telegram: "Hunt found no viable ideas for '{domain}'. Try a different domain." HALT for user redirect |
 | All hunt candidates score below 6 | Present them anyway with warning: "All candidates scored low. Pick one to explore or refine the search." |
 | Validation score < 6 | Proceed anyway — carry risks forward, do NOT halt |
 
-### Discovery Phase Errors (1-8)
+### Discovery Phase Errors (brief-capture through checkpoint, Phases 1-9)
 
 | Error | Action |
 |-------|--------|
@@ -1196,7 +1243,7 @@ And report via Telegram what's left.
 | Story/test file write fails | Retry, then Telegram + halt |
 | Beads import partially fails | Count existing issues (`bd list -l {prefix} --json`), delete duplicates (`bd close {dup} --reason "duplicate from partial import"`), retry remaining with individual `bd create` |
 | Beads import fully fails | Retry with individual `bd create` per story, then Telegram + halt |
-### Implementation Phase Errors (Phase 10)
+### dev (Phase 10) Errors
 
 Standard work-loop error handling applies:
 - Pi crashes: read `.result` marker file as fallback
@@ -1204,7 +1251,7 @@ Standard work-loop error handling applies:
 - Git push fails: retry with `git pull --rebase`, then Telegram alert
 - Story fails 3 attempts: failure-classifier → escalation-handler
 
-### Validation & Deployment Errors (Phase 11-12)
+### e2e-validation / deploy Errors (Phases 11-12)
 
 | Error | Action |
 |-------|--------|
@@ -1219,10 +1266,10 @@ Standard work-loop error handling applies:
 
 If the pipeline is interrupted (crash or manual stop):
 1. Check `_output/` for existing artifacts — resume from the last incomplete phase
-2. Check Beads for filed issues — if issues exist, skip to Phase 10
+2. Check Beads for filed issues — if issues exist, skip to dev (Phase 10)
 3. If mid-implementation, work-loop handles its own resumption via checkpoints
-4. If `_output/e2e-validation.md` exists, skip to Phase 12 (deployment)
-5. If `_output/deployment.md` exists, skip to Phase 13 (completion report)
+4. If `_output/e2e-validation.md` exists, skip to deploy (Phase 12)
+5. If `_output/deployment.md` exists, skip to report (Phase 13)
 
 ---
 
