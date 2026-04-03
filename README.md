@@ -1,8 +1,71 @@
-# Hermes/Pi Dev Team — Portable Setup Guide
+# Hermes/Pi Dev Team — Autonomous AI Development Pipeline
 
-## What This Is
+A portable AI dev team that takes a project from idea to deployment with zero human gates. Drop it into any directory — greenfield or brownfield — and let it build.
 
-A portable AI dev team that can be dropped into any project directory. Hermes orchestrates, Pi codes, Beads tracks work. You manage via Telegram or CLI.
+## Highlights
+
+### BMAD Method — Structured Planning That LLMs Can Follow
+The [BMad Method](https://bmadcode.github.io/BMAD-METHOD/) provides the planning backbone. Product briefs, PRDs, architecture docs, epics, and stories are generated through structured agent personas (analyst, architect, PM, scrum master) before a single line of code is written. Each artifact feeds the next — no hallucinated requirements, no missing acceptance criteria. The result: stories with embedded coding rules that any LLM agent can implement without losing context.
+
+### Hermes Agent — Orchestration Brain
+[Hermes](https://github.com/NousResearch/hermes-agent) (Nous Research) is the orchestrator. It doesn't write code — it manages the pipeline: detects project stack, queues work from Beads, dispatches coding tasks, cross-checks results, escalates failures through a progress-based chain (retry → different approach → model upgrade → web research → deep research & rearchitect), and never dead-ends to a human. Hermes runs skills loaded at session start and communicates via CLI, Telegram, or cron.
+
+### Pi Coding Agent — TDD Implementation Engine
+[Pi](https://github.com/NousResearch/pi-agent) is the hands-on-keyboard agent. Dispatched by Hermes as isolated CLI child processes (one per story), Pi reads AGENTS.md for project conventions, implements code to make pre-written tests pass, and iterates until green. If Pi crashes, Hermes is unaffected — process isolation by design. Pi never modifies tests (tests define the contract) and never guesses the test runner (Hermes auto-detects it).
+
+### Vibe-Loop — Flexible Idea-to-Deploy Pipeline
+The vibe-loop is the single entry point for all dev work — a 13-phase pipeline that adapts to context:
+
+```
+Greenfield (new project):          Brownfield (existing project):
+  Phase 0:  Market research          Phase 0:  AUTO-SKIPPED
+  Phase 1:  Idea capture             Phase 1:  Task description
+  Phase 2:  Project scaffold         Phase 2:  Deep project immersion
+  Phase 3:  Product brief            Phase 3:  Feature brief (lean)
+  Phase 4:  Full PRD                 Phase 4:  Feature spec (lean)
+  Phase 5:  Architecture             Phase 5:  Integration architecture
+  Phase 6:  Epics & stories          Phase 6:  (same)
+  Phase 7:  Story specs + TDD        Phase 7:  Stories + coding rules
+  Phase 8:  File issues (Beads)      Phase 8:  (same)
+  Phase 9:  Checkpoint                Phase 9:  (same)
+  Phase 10: Implementation           Phase 10: (same)
+  Phase 10b: Pattern capture         Phase 10b: (same)
+  Phase 10c: Quinn adversarial       Phase 10c: (same — MANDATORY gate)
+             review (3 layers)
+  Phase 11: E2E validation           Phase 11: + integration check
+  Phase 12: Deploy                   Phase 12: (same)
+  Phase 13: Completion report        Phase 13: (same)
+```
+
+**Key features:**
+- **`--yolo` mode** runs end-to-end with zero human gates — discovery flows into implementation flows into review flows into deploy
+- **Redundancy detection** — if you already wrote a PRD with BMAD agents, vibe-loop finds it and skips regeneration
+- **Brownfield-first** — auto-detects existing projects, reads actual source files to understand patterns before writing new code
+- **Quinn adversarial review** is a hard gate (Phase 10c) — three parallel review layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor) catch what tests miss
+- **Progress-based retries** — no arbitrary "3 strikes" limits; keeps going while making progress, escalates when stalled
+- **No human dead ends** — every failure path resolves autonomously through deep research and rearchitecting
+
+## Quick Start
+
+```bash
+# Greenfield — idea to deployed app
+hermes chat -s dev-team/vibe-loop --yolo \
+  -q "Build a meal prep timer with React and Express"
+
+# Brownfield — add a feature to existing project
+cd /path/to/your/project
+hermes chat -s dev-team/vibe-loop --yolo \
+  -q "Add social sharing feature"
+
+# Resume from existing BMAD artifacts
+hermes chat -s dev-team/vibe-loop --yolo \
+  -q "PRD is at docs/prd.md. Architecture at docs/architecture.md. \
+      Skip to story creation (Phase 7) and continue through implementation."
+```
+
+---
+
+## Setup Guide
 
 ## Architecture
 
